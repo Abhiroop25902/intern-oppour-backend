@@ -37,6 +37,34 @@ router.get('/', async (req, res) => {
     }
 })
 
+router.get('/:id', async (req, res) => {
+    const dbClient = new MongoClient(process.env.DATABASE_URI);
+
+    const id = req.params.id
+    //check id to be of 24 characters
+    if (id.length !== 24) {
+        res.status(404).send();
+        return;
+    }
+
+    try {
+        // connection to DB happens in the next line
+        const database = dbClient.db('intern_oppour')
+        const internshipCollection = database.collection('internship');
+        const filter = {
+            _id: new ObjectId(id)
+        }
+        const internship = await internshipCollection.findOne(filter);
+        if (internship)
+            res.send(internship);
+        else
+            res.status(404).send();
+    }
+    finally {
+        dbClient.close();
+    }
+})
+
 router.post('/', async (req, res) => {
     const { error } = validatePostRequest(req.body);
     if (error) return res.status(400).send(error.details[0].message);

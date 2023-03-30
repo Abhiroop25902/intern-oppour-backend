@@ -1,15 +1,15 @@
 const express = require('express');
 const cors = require('cors');
-// const internship = require('./routes/internship.js')
 const health = require('./routes/health.js')
+const internship = require('./routes/internship.js')
 const app = express()
 
 app.set('trust proxy', true)
 
 app.use(express.json()); //for json support
 app.use(cors())
-// app.use('/internship', internship)
 app.use('/health', health)
+app.use('/internship', internship)
 
 const port = process.env.PORT || 5000;
 const server = app.listen(port,

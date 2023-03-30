@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const health = require('./routes/health.js')
 const internship = require('./routes/internship.js')
+require('dotenv').config()
 const app = express()
 
 app.set('trust proxy', true)

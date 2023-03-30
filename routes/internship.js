@@ -1,7 +1,19 @@
 const express = require('express');
+const Joi = require('joi');
 const { MongoClient, ObjectId } = require('mongodb');
 
 router = express.Router()
+
+// validate the request to have only {name: string} and noting else
+function validatePostRequest(req_body) {
+    const schema = Joi.object({
+        name: Joi.string().required(),
+        link: Joi.string(),
+        info: Joi.string().allow('')
+    })
+
+    return schema.validate(req_body);
+}
 
 router.get('/', async (req, res) => {
     const page = req.query.page || 1;
@@ -21,6 +33,43 @@ router.get('/', async (req, res) => {
         res.status(200).send(JSON.stringify(data));
 
     } finally {
+        await dbClient.close();
+    }
+})
+
+router.post('/', async (req, res) => {
+    const { error } = validatePostRequest(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    const dbClient = new MongoClient(process.env.DATABASE_URI);
+
+    try {
+        // connection to DB happens in the next line
+        const database = dbClient.db('intern_oppour')
+        const internshipCollection = database.collection('internship')
+
+        // check if the user is already present
+        const filter = {
+            name: req.body.name
+        };
+
+        const result = await internshipCollection.findOne(filter);
+
+        if (result)
+            res.send(result);
+        else {
+            //else make a new user
+            const newUserData = req.body;
+
+            const result = await internshipCollection.insertOne(newUserData);
+            console.log(`New User Created with _id: ${result.insertedId}`);
+            res.status(201)
+                .location(`/internship/${result.insertedId}`)
+                .send(newUserData); // 201 created
+
+        }
+    } finally {
+        // Ensures that the client will close when you finish/error
         await dbClient.close();
     }
 })

@@ -5,7 +5,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 router = express.Router()
 
 // validate the request to have only {name: string} and noting else
-function validatePostRequest(req_body) {
+function validatePostAndPutRequest(req_body) {
     const schema = Joi.object({
         name: Joi.string().required(),
         link: Joi.string(),
@@ -66,7 +66,7 @@ router.get('/:id', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-    const { error } = validatePostRequest(req.body);
+    const { error } = validatePostAndPutRequest(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
     const dbClient = new MongoClient(process.env.DATABASE_URI);
@@ -99,6 +99,48 @@ router.post('/', async (req, res) => {
     } finally {
         // Ensures that the client will close when you finish/error
         await dbClient.close();
+    }
+})
+
+router.put('/', (req, res) => {
+    res.status(405).send();
+})
+
+router.put('/:id', async (req, res) => {
+    const id = req.params.id;
+    //check id to be of 24 characters
+    if (id.length !== 24) {
+        res.status(404).send();
+        return;
+    }
+
+    const { error } = validatePostAndPutRequest(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    const dbClient = new MongoClient(process.env.DATABASE_URI);
+
+
+    try {
+        // connection to DB happens in the next line
+        const database = dbClient.db('intern_oppour')
+        const internshipCollection = database.collection('internship')
+
+        const filter = {
+            _id: new ObjectId(id)
+        }
+
+        const options = {
+            returnDocument: 'after'
+        }
+
+        const result = await internshipCollection.findOneAndReplace(filter, req.body, options)
+        if (result.value)
+            res.send(result.value);
+        else
+            res.status(404).send();
+    }
+    finally {
+        dbClient.close();
     }
 })
 

@@ -144,4 +144,41 @@ router.put('/:id', async (req, res) => {
     }
 })
 
+router.delete('/', (req, res) => {
+    res.status(405).send();
+})
+
+router.delete('/:id', async (req, res) => {
+    const id = req.params.id;
+    //check id to be of 24 characters
+    if (id.length !== 24) {
+        res.status(404).send();
+        return;
+    }
+
+    const dbClient = new MongoClient(process.env.DATABASE_URI);
+
+    try {
+        // connection to DB happens in the next line
+        const database = dbClient.db('intern_oppour')
+        const internshipCollection = database.collection('internship')
+
+
+        const filter = {
+            _id: new ObjectId(id)
+        }
+
+        const deleteResult = await internshipCollection.findOneAndDelete(filter)
+
+        if (deleteResult.value)
+            res.send(deleteResult.value);
+        else
+            res.status(404).send();
+
+    }
+    finally {
+        dbClient.close();
+    }
+})
+
 module.exports = router;
